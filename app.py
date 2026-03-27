@@ -1,13 +1,30 @@
-# Updated app.py
+#!/usr/bin/env python3
 
-# Code to manage the new location of invoice_data.json
+"""
+OBC Invoice Generator — Web Server
+Run: python app.py
+Then open: http://<NAS-IP>:5050
+"""
 
-import os
+import json, os, tempfile, uuid
+from datetime import date
+from flask import Flask, request, jsonify, send_file, render_template
+from PIL import Image
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle, Paragraph,
+    Spacer, HRFlowable
+)
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+from reportlab.pdfgen import canvas as rl_canvas
+from pypdf import PdfReader, PdfWriter
 
-<<<<<<< HEAD
 # ── Config ────────────────────────────────────────────────────────────────────
 app         = Flask(__name__)
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "templates", "invoice_data.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "invoice_data.json")
 UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
 OUTPUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -41,7 +58,6 @@ def load_profiles():
     return DEFAULT_DATA.copy()
 
 def save_profiles(data):
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -295,9 +311,3 @@ def download(filename):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=False)
-=======
-# Assuming 'invoice_data.json' is moved to 'templates' directory
-INVOICE_DATA_PATH = os.path.join('templates', 'invoice_data.json')
-
-# Rest of your app.py code continues here...
->>>>>>> 8668f62813ca637e8a3dad43c112eee1df019894

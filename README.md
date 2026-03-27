@@ -118,3 +118,8 @@ docker run -d -p 5050:5050 \
 ```
 
 > **注意**：photos 的 `path` 是 NAS 上的絕對路徑（上傳後由 server 回傳）。
+
+
+1. 讀檔及存檔.obc時，要包括from, bill to, payment的選項
+2. 在OBC trip上面加上一欄invoice number, 並同時產生在PDF上、如果留空白，則pdf上就不用產生
+3. 將invoice_data的位置，從/ 移到/templates下面

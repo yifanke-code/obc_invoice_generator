@@ -61,30 +61,73 @@ python app.py
 cd /share/homes/admin/obc_invoice && python3 app.py &
 ```
 
-### 方法 3：使用 Docker（推薦）
+### 方法 3：使用 Docker Compose（推薦）
 
 ASUSTOR 支援 Docker（需安裝 **Docker** App）。
 
-建立 `Dockerfile`：
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5050
-CMD ["python", "app.py"]
-```
+最簡單的方式是使用 `docker-compose.yml`：
 
 ```bash
+# 構建並啟動容器
+docker-compose up -d
+
+# 檢查運行狀態
+docker-compose ps
+
+# 停止容器
+docker-compose down
+```
+
+`docker-compose.yml` 會自動：
+- 構建 Docker 映像
+- 在 5050 埠啟動服務
+- 掛載 volume，使 `invoice_data.json` 能同步到主機目錄
+- 設置自動重啟策略
+
+**Volume 掛載說明**：
+```yaml
+volumes:
+  - ./:/app                              # 整個應用目錄
+  - ./invoice_data.json:/app/invoice_data.json:rw  # 設定檔
+  - ./uploads:/app/uploads:rw            # 上傳的照片
+  - ./output:/app/output:rw              # 產生的 PDF
+```
+
+### 方法 4：手動 Docker 命令
+
+若不使用 docker-compose，可用以下命令：
+
+```bash
+# 構建映像
 docker build -t obc-invoice .
+
+# 運行容器（保持 volume 同步）
 docker run -d -p 5050:5050 \
-  -v /share/homes/admin/obc_data:/app/uploads \
-  -v /share/homes/admin/obc_data:/app/output \
+  -v $(pwd):/app \
+  -v $(pwd)/invoice_data.json:/app/invoice_data.json:rw \
+  -v $(pwd)/uploads:/app/uploads:rw \
+  -v $(pwd)/output:/app/output:rw \
   --name obc-invoice \
   --restart unless-stopped \
   obc-invoice
 ```
+
+**NAS 上的範例**（使用絕對路徑）：
+```bash
+docker run -d -p 5050:5050 \
+  -v /share/homes/admin/obc_invoice:/app \
+  -v /share/homes/admin/obc_invoice/invoice_data.json:/app/invoice_data.json:rw \
+  -v /share/homes/admin/obc_invoice/uploads:/app/uploads:rw \
+  -v /share/homes/admin/obc_invoice/output:/app/output:rw \
+  --name obc-invoice \
+  --restart unless-stopped \
+  obc-invoice
+```
+
+**修改 invoice_data.json 後的同步**：
+- 編輯主機上的 `invoice_data.json`
+- 容器內會自動看到更新（因為掛載了 volume）
+- 反之亦然：容器內保存的修改會自動出現在主機上
 
 ---
 
@@ -106,6 +149,7 @@ docker run -d -p 5050:5050 \
 ```json
 {
   "date": "2026-03-24",
+  "inv_number": "INV-2026-001",
   "obc_trip": "Trip description",
   "from": { "full_name": "...", "street": "...", "post_code": "...", "city": "..." },
   "billto": { "company": "...", "address": "..." },
@@ -117,9 +161,6 @@ docker run -d -p 5050:5050 \
 }
 ```
 
-> **注意**：photos 的 `path` 是 NAS 上的絕對路徑（上傳後由 server 回傳）。
-
-
-1. 讀檔及存檔.obc時，要包括from, bill to, payment的選項
-2. 在OBC trip上面加上一欄invoice number, 並同時產生在PDF上、如果留空白，則pdf上就不用產生
-3. 將invoice_data的位置，從/ 移到/templates下面
+> **注意**：
+> - `inv_number` 為選填（如果留空，PDF 上不會顯示）
+> - `photos` 的 `path` 是 server 上的絕對路徑（上傳後由 server 回傳）

@@ -1,0 +1,28 @@
+{
+  "from_profiles": [
+    {
+      "name": "Default Profile",
+      "full_name": "(Cheryl ) HUEIPING Wu",
+      "street": "4F, No.16-1, Guang Hua 2nd Street,",
+      "post_code": "30052",
+      "city": "Hsinchu City, Taiwan"
+    }
+  ],
+  "billto_profiles": [
+    {
+      "name": "Default Client",
+      "company": "ACS Time Critical Service GmbH",
+      "address": "Kleiner\n Kornweg 26-28, 65451 Kelsterbach, Germany"
+    }
+  ],
+  "payment_profiles": [
+    {
+      "name": "Default Bank",
+      "payment": "BANK transfer - Due Upon Receipt",
+      "bank_name": "Bank of Taiwan Peitalu Branch No. 267, Ming Chuang Road, Hsinchu, Taiwan",
+      "beneficiary": "Huei-Ping Wu",
+      "swift": "BKTWTWTP164",
+      "iban": "(for USD)164-007-01129-1"
+    }
+  ]
+}

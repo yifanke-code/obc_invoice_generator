@@ -286,6 +286,8 @@ textarea{resize:vertical;min-height:70px}
             <input type="date" id="inv_date"/></div>
           <div class="field full"><label class="lbl">OBC Trip</label>
             <input type="text" id="obc_trip" placeholder="free typing…"/></div>
+          <div class="field full"><label class="lbl">Invoice Number <span style="opacity:.5">(選填)</span></label>
+            <input type="text" id="inv_number" placeholder="leave blank to omit from PDF…"/></div>
         </div>
       </div>
     </div>
@@ -608,6 +610,7 @@ function collectFormData() {
   });
   return {
     date:     document.getElementById("inv_date").value,
+    inv_number: document.getElementById("inv_number").value,
     obc_trip: document.getElementById("obc_trip").value,
     from: {
       full_name: getVal("from_full_name"), street: getVal("from_street"),
@@ -629,6 +632,7 @@ function collectFormData() {
 
 function restoreFormData(data) {
   setVal("inv_date",    data.date || new Date().toISOString().slice(0,10));
+  setVal("inv_number",  data.inv_number || "");
   setVal("obc_trip",    data.obc_trip || "");
   const f = data.from || {};
   setVal("from_full_name", f.full_name); setVal("from_street", f.street);

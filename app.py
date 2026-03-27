@@ -24,7 +24,7 @@ from pypdf import PdfReader, PdfWriter
 
 # ── Config ────────────────────────────────────────────────────────────────────
 app         = Flask(__name__)
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "invoice_data.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "templates", "invoice_data.json")
 UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
 OUTPUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -58,6 +58,7 @@ def load_profiles():
     return DEFAULT_DATA.copy()
 
 def save_profiles(data):
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 

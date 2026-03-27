@@ -114,7 +114,7 @@ else:
 
 # ── Config ────────────────────────────────────────────────────────────────────
 app         = Flask(__name__)
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "templates", "invoice_data.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "invoice_data.json")
 UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
 OUTPUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(UPLOAD_DIR, exist_ok=True)

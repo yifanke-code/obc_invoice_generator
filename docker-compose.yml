@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  obc-invoice:
+    build: .
+    ports:
+      - "5050:5050"
+    volumes:
+      # Mount the entire app directory to sync files
+      - ./:/app
+      # Explicitly mount invoice_data.json with read-write permissions
+      - ./invoice_data.json:/app/invoice_data.json:rw
+      # Mount uploads and output directories
+      - ./uploads:/app/uploads:rw
+      - ./output:/app/output:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+    container_name: obc-invoice-generator
+    restart: unless-stopped

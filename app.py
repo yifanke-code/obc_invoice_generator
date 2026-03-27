@@ -20,11 +20,33 @@ from reportlab.platypus import (
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
+
+# ── Register Chinese Fonts ────────────────────────────────────────────────────
+try:
+    # Try to register system fonts for Chinese support
+    # For Windows
+    if os.path.exists("C:\\Windows\\Fonts\\msyh.ttc"):  # Microsoft YaHei
+        pdfmetrics.registerFont(TTFont("SimHei", "C:\\Windows\\Fonts\\SimHei.ttf"))
+        pdfmetrics.registerFont(TTFont("MicrosoftYaHei", "C:\\Windows\\Fonts\\msyh.ttc"))
+    # For Linux/Mac - common Chinese font locations
+    elif os.path.exists("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"):
+        pdfmetrics.registerFont(TTFont("ChineseFont", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"))
+    elif os.path.exists("/System/Library/Fonts/STHeiti Light.ttc"):  # macOS
+        pdfmetrics.registerFont(TTFont("ChineseFont", "/System/Library/Fonts/STHeiti Light.ttc"))
+except Exception as e:
+    print(f"Warning: Could not register Chinese fonts: {e}")
+
+# Define a Chinese-compatible font name (fallback)
+CHINESE_FONT = "MicrosoftYaHei" if os.path.exists("C:\\Windows\\Fonts\\msyh.ttc") else "ChineseFont"
+if not os.path.exists("C:\\Windows\\Fonts\\msyh.ttc") and not os.path.exists("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc") and not os.path.exists("/System/Library/Fonts/STHeiti Light.ttc"):
+    CHINESE_FONT = "Helvetica"  # Fallback to Helvetica if no Chinese font found
 
 # ── Config ────────────────────────────────────────────────────────────────────
 app         = Flask(__name__)
-DATA_FILE   = os.path.join(os.path.dirname(__file__), "invoice_data.json")
+DATA_FILE   = os.path.join(os.path.dirname(__file__), "templates", "invoice_data.json")
 UPLOAD_DIR  = os.path.join(os.path.dirname(__file__), "uploads")
 OUTPUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -58,6 +80,7 @@ def load_profiles():
     return DEFAULT_DATA.copy()
 
 def save_profiles(data):
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -69,28 +92,28 @@ def generate_pdf(form_data, output_path):
         topMargin=15*mm, bottomMargin=15*mm
     )
 
-    # Styles
+    # Styles - use Chinese font for content, Helvetica for English headers
     title_s  = ParagraphStyle("T",  fontSize=26, textColor=colors.HexColor("#1a1a2e"),
                                fontName="Helvetica-Bold", alignment=TA_RIGHT, spaceAfter=6)
     head_s   = ParagraphStyle("H",  fontSize=9,  textColor=colors.HexColor("#888888"),
                                fontName="Helvetica", spaceAfter=1)
     val_s    = ParagraphStyle("V",  fontSize=10, textColor=colors.HexColor("#1a1a2e"),
-                               fontName="Helvetica", spaceAfter=2, leading=14)
+                               fontName=CHINESE_FONT, spaceAfter=2, leading=14)
     bold_s   = ParagraphStyle("B",  fontSize=10, textColor=colors.HexColor("#1a1a2e"),
-                               fontName="Helvetica-Bold", spaceAfter=2)
+                               fontName=CHINESE_FONT, spaceAfter=2)
     small_s  = ParagraphStyle("S",  fontSize=8,  textColor=colors.HexColor("#555555"),
-                               fontName="Helvetica")
+                               fontName=CHINESE_FONT)
     total_s  = ParagraphStyle("To", fontSize=12, textColor=colors.white,
                                fontName="Helvetica-Bold", alignment=TA_RIGHT)
     note_s   = ParagraphStyle("N",  fontSize=9,  textColor=colors.HexColor("#444444"),
-                               fontName="Helvetica", leading=13)
+                               fontName=CHINESE_FONT, leading=13)
     th_s     = ParagraphStyle("TH", fontSize=9,  fontName="Helvetica-Bold",
                                textColor=colors.white, alignment=TA_CENTER)
-    td_c     = ParagraphStyle("Tc", fontSize=9,  fontName="Helvetica",
+    td_c     = ParagraphStyle("Tc", fontSize=9,  fontName=CHINESE_FONT,
                                textColor=colors.HexColor("#1a1a2e"), alignment=TA_CENTER)
-    td_l     = ParagraphStyle("Tl", fontSize=9,  fontName="Helvetica",
+    td_l     = ParagraphStyle("Tl", fontSize=9,  fontName=CHINESE_FONT,
                                textColor=colors.HexColor("#1a1a2e"), alignment=TA_LEFT)
-    td_r     = ParagraphStyle("Tr", fontSize=9,  fontName="Helvetica",
+    td_r     = ParagraphStyle("Tr", fontSize=9,  fontName=CHINESE_FONT,
                                textColor=colors.HexColor("#1a1a2e"), alignment=TA_RIGHT)
 
     story = []
@@ -236,7 +259,11 @@ def generate_pdf(form_data, output_path):
                 c.drawImage(path, x, y, width=dw, height=dh,
                             preserveAspectRatio=True, mask="auto")
                 if desc:
-                    c.setFont("Helvetica", 8)
+                    # Use Chinese font for descriptions, with fallback
+                    try:
+                        c.setFont(CHINESE_FONT, 8)
+                    except:
+                        c.setFont("Helvetica", 8)
                     c.setFillColor(colors.HexColor("#333333"))
                     c.drawCentredString(A4_W/2, y - cap_h + 2, desc)
             except Exception as e:

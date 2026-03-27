@@ -25,24 +25,92 @@ from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
 
 # ── Register Chinese Fonts ────────────────────────────────────────────────────
-try:
-    # Try to register system fonts for Chinese support
-    # For Windows
-    if os.path.exists("C:\\Windows\\Fonts\\msyh.ttc"):  # Microsoft YaHei
-        pdfmetrics.registerFont(TTFont("SimHei", "C:\\Windows\\Fonts\\SimHei.ttf"))
-        pdfmetrics.registerFont(TTFont("MicrosoftYaHei", "C:\\Windows\\Fonts\\msyh.ttc"))
-    # For Linux/Mac - common Chinese font locations
-    elif os.path.exists("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"):
-        pdfmetrics.registerFont(TTFont("ChineseFont", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"))
-    elif os.path.exists("/System/Library/Fonts/STHeiti Light.ttc"):  # macOS
-        pdfmetrics.registerFont(TTFont("ChineseFont", "/System/Library/Fonts/STHeiti Light.ttc"))
-except Exception as e:
-    print(f"Warning: Could not register Chinese fonts: {e}")
+import sys
+from reportlab.pdfbase.pdfmetrics import registerFont, registerFontFamily
 
-# Define a Chinese-compatible font name (fallback)
-CHINESE_FONT = "MicrosoftYaHei" if os.path.exists("C:\\Windows\\Fonts\\msyh.ttc") else "ChineseFont"
-if not os.path.exists("C:\\Windows\\Fonts\\msyh.ttc") and not os.path.exists("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc") and not os.path.exists("/System/Library/Fonts/STHeiti Light.ttc"):
-    CHINESE_FONT = "Helvetica"  # Fallback to Helvetica if no Chinese font found
+# Force UTF-8 encoding for print statements (safe approach)
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
+
+CHINESE_FONT = "Helvetica"  # Default fallback
+
+try:
+    # For Windows - try multiple font paths, prefer .ttf files
+    windows_fonts = [
+        ("C:\\Windows\\Fonts\\SimsunExtG.ttf", "SimsunExtG"),    # SimSun Extended
+        ("C:\\Windows\\Fonts\\simsunb.ttf", "Simsun"),           # SimSun Bold
+        ("C:\\Windows\\Fonts\\msyh.ttc", "MSYaHei"),             # Microsoft YaHei (will try index 0)
+        ("C:\\Windows\\Fonts\\simsun.ttc", "Simsun"),            # SimSun (will try index 0)
+    ]
+    
+    for font_path, font_name in windows_fonts:
+        if os.path.exists(font_path):
+            try:
+                # For .ttf files, register directly
+                if font_path.endswith(".ttf"):
+                    pdfmetrics.registerFont(TTFont("ChineseFont", font_path))
+                    CHINESE_FONT = "ChineseFont"
+                    print(f"[OK] Registered Chinese font: {font_path}")
+                    break
+                # For .ttc files, try to extract first font
+                elif font_path.endswith(".ttc"):
+                    # Try to use the font directly (ReportLab may handle it)
+                    pdfmetrics.registerFont(TTFont("ChineseFont", font_path))
+                    CHINESE_FONT = "ChineseFont"
+                    print(f"[OK] Registered Chinese TTC font: {font_path}")
+                    break
+            except Exception as e:
+                print(f"[FAIL] Failed to register {font_path}: {e}")
+                continue
+    
+    # For Linux - common Chinese font locations
+    if CHINESE_FONT == "Helvetica":
+        linux_fonts = [
+            ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "NotoSans"),
+            ("/usr/share/fonts/truetype/droid/DroidSansCJK.ttf", "DroidSans"),
+            ("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc", "NotoSerif"),
+        ]
+        for font_path, font_name in linux_fonts:
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont("ChineseFont", font_path))
+                    CHINESE_FONT = "ChineseFont"
+                    print(f"[OK] Registered Chinese font: {font_path}")
+                    break
+                except Exception as e:
+                    print(f"[FAIL] Failed to register {font_path}: {e}")
+                    continue
+    
+    # For macOS - Apple fonts
+    if CHINESE_FONT == "Helvetica":
+        mac_fonts = [
+            ("/System/Library/Fonts/STHeiti Light.ttc", "STHeiti"),
+            ("/Library/Fonts/Arial Unicode.ttf", "ArialUnicode"),
+            ("/System/Library/Fonts/Hiragino Sans GB.ttc", "HiraginoGB"),
+        ]
+        for font_path, font_name in mac_fonts:
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont("ChineseFont", font_path))
+                    CHINESE_FONT = "ChineseFont"
+                    print(f"[OK] Registered Chinese font: {font_path}")
+                    break
+                except Exception as e:
+                    print(f"[FAIL] Failed to register {font_path}: {e}")
+                    continue
+
+except Exception as e:
+    print(f"[WARN] Could not initialize Chinese fonts: {e}")
+    import traceback
+    traceback.print_exc()
+
+if CHINESE_FONT == "Helvetica":
+    print("[WARN] No Chinese fonts found. Using Helvetica fallback. Install fonts for proper Chinese support.")
+else:
+    print(f"[INFO] Using font: {CHINESE_FONT}")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 app         = Flask(__name__)

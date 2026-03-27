@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OBC Invoice Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink:    #1a1a2e;
+  --ink2:   #2d2d4e;
+  --muted:  #888;
+  --line:   #e2e2ec;
+  --bg:     #f7f7fb;
+  --white:  #ffffff;
+  --accent: #4f46e5;
+  --accent2:#7c3aed;
+  --danger: #ef4444;
+  --success:#10b981;
+  --radius: 10px;
+  --shadow: 0 2px 16px rgba(26,26,46,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+
+/* ── Top bar ── */
+.topbar{
+  background:var(--ink);color:#fff;
+  padding:0 32px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-brand{font-family:'DM Serif Display',serif;font-size:1.25rem;letter-spacing:.02em}
+.topbar-brand span{color:#a5b4fc}
+.topbar-actions{display:flex;gap:10px}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:6px;font-size:.85rem;font-weight:500;
+  cursor:pointer;border:none;transition:all .15s;font-family:inherit;
+}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4338ca}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#059669}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);padding:4px 10px;font-size:.78rem}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:5px 12px;font-size:.8rem}
+
+/* ── Layout ── */
+.container{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+
+/* ── Cards ── */
+.card{
+  background:var(--white);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden;
+}
+.card-header{
+  padding:14px 24px;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-header h3{font-family:'DM Serif Display',serif;font-size:1rem;font-weight:400;letter-spacing:.05em}
+.card-body{padding:20px 24px}
+
+/* ── Profile selector row ── */
+.profile-row{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.profile-row select{
+  flex:1;padding:8px 12px;border:1.5px solid var(--line);border-radius:6px;
+  font-family:inherit;font-size:.9rem;background:var(--bg);color:var(--ink);
+}
+.profile-row select:focus{outline:none;border-color:var(--accent)}
+
+/* ── Form fields ── */
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+label.lbl{font-size:.75rem;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+input[type=text],input[type=date],textarea,select.full-select{
+  padding:9px 12px;border:1.5px solid var(--line);border-radius:6px;
+  font-family:inherit;font-size:.9rem;color:var(--ink);background:var(--white);
+  transition:border-color .15s;width:100%;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:70px}
+
+/* ── Two-col layout for FROM / DATE ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* ── Items table ── */
+.items-header{
+  display:grid;
+  grid-template-columns:36px 1fr 110px 70px 110px 40px;
+  gap:6px;padding:8px 10px;
+  background:var(--ink);color:#fff;
+  border-radius:6px 6px 0 0;
+  font-size:.75rem;font-weight:600;letter-spacing:.06em;
+}
+.item-row{
+  display:grid;
+  grid-template-columns:36px 1fr 110px 70px 110px 40px;
+  gap:6px;padding:6px 10px;align-items:center;
+  border-bottom:1px solid var(--line);
+}
+.item-row:nth-child(odd){background:#fafafe}
+.item-num{font-size:.8rem;color:var(--muted);text-align:center;font-weight:600}
+.item-row input{
+  padding:6px 9px;border:1.5px solid transparent;border-radius:5px;
+  font-size:.88rem;font-family:inherit;color:var(--ink);background:transparent;width:100%;
+}
+.item-row input:focus{border-color:var(--accent);background:#fff;outline:none}
+.item-row input.right{text-align:right}
+.item-row input.center{text-align:center}
+.amt-display{
+  font-size:.88rem;text-align:right;color:var(--ink2);font-weight:500;
+  padding:6px 9px;
+}
+.items-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 10px;border-top:2px solid var(--ink);
+}
+.total-label{font-size:.8rem;font-weight:600;color:var(--muted);letter-spacing:.06em}
+.total-value{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--ink)}
+
+/* ── Photos ── */
+.photo-drop{
+  border:2px dashed var(--line);border-radius:8px;
+  padding:28px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;margin-bottom:12px;
+}
+.photo-drop:hover,.photo-drop.drag{border-color:var(--accent);background:#f0f0ff}
+.photo-drop p{color:var(--muted);font-size:.9rem;margin-top:6px}
+.photo-drop .icon{font-size:2rem}
+.photo-list{display:flex;flex-direction:column;gap:12px}
+.photo-item{
+  display:grid;grid-template-columns:120px 1fr 36px;gap:14px;
+  align-items:center;background:var(--bg);border-radius:8px;
+  padding:10px 12px;border:1.5px solid var(--line);
+}
+.photo-thumb{
+  width:120px;height:80px;object-fit:cover;border-radius:5px;
+  background:#e5e5f0;display:block;
+}
+.photo-info{display:flex;flex-direction:column;gap:6px}
+.photo-name{font-size:.82rem;font-weight:600;color:var(--ink2)}
+.photo-info input{
+  padding:6px 10px;border:1.5px solid var(--line);border-radius:5px;
+  font-size:.85rem;font-family:inherit;
+}
+.photo-info input:focus{outline:none;border-color:var(--accent)}
+.remove-photo{
+  background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;
+  padding:4px;border-radius:4px;transition:color .15s;
+}
+.remove-photo:hover{color:var(--danger)}
+
+/* ── Profile editor modal ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+  z-index:200;align-items:center;justify-content:center;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:#fff;border-radius:12px;width:min(680px,95vw);max-height:88vh;
+  overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.modal-header{
+  padding:16px 24px;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-header h3{font-family:'DM Serif Display',serif;font-weight:400}
+.modal-close{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;opacity:.7}
+.modal-close:hover{opacity:1}
+.modal-body{display:flex;flex:1;overflow:hidden}
+.modal-list{
+  width:200px;border-right:1px solid var(--line);overflow-y:auto;
+  background:var(--bg);flex-shrink:0;
+}
+.modal-list-item{
+  padding:11px 16px;cursor:pointer;font-size:.88rem;
+  border-bottom:1px solid var(--line);transition:background .12s;
+}
+.modal-list-item:hover{background:#e8e8f5}
+.modal-list-item.active{background:var(--accent);color:#fff;font-weight:500}
+.modal-list-actions{padding:10px;display:flex;flex-direction:column;gap:6px}
+.modal-fields{flex:1;padding:20px 24px;overflow-y:auto}
+.modal-fields .field{margin-bottom:14px}
+.modal-fields label{display:block;font-size:.75rem;font-weight:600;
+  letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.modal-fields input{
+  width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:6px;
+  font-family:inherit;font-size:.9rem;
+}
+.modal-fields input:focus{outline:none;border-color:var(--accent)}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+
+/* ── Bottom action bar ── */
+.action-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+  padding:14px 32px;display:flex;align-items:center;justify-content:center;gap:14px;
+  z-index:99;
+}
+.action-bar .file-label{font-size:.8rem;color:var(--muted)}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:72px;right:24px;
+  background:var(--ink);color:#fff;border-radius:8px;
+  padding:12px 20px;font-size:.88rem;z-index:300;
+  transform:translateX(120%);transition:transform .3s;box-shadow:var(--shadow);
+}
+.toast.show{transform:translateX(0)}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--danger)}
+
+/* ── Loading overlay ── */
+.loading{
+  display:none;position:fixed;inset:0;background:rgba(255,255,255,.8);
+  z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+.loading.show{display:flex}
+.spinner{
+  width:44px;height:44px;border:4px solid var(--line);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:var(--ink2);font-weight:500}
+
+@media(max-width:600px){
+  .two-col,.fields-grid{grid-template-columns:1fr}
+  .items-header{grid-template-columns:28px 1fr 90px 55px 90px 32px;font-size:.68rem}
+  .item-row{grid-template-columns:28px 1fr 90px 55px 90px 32px}
+  .photo-item{grid-template-columns:80px 1fr 30px}
+  .photo-thumb{width:80px;height:54px}
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">OBC <span>Invoice</span></div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="loadOBC()">📂 開啟 .obc</button>
+    <button class="btn btn-ghost" onclick="saveOBC()">💾 儲存 .obc</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+
+  <!-- FROM + DATE side by side -->
+  <div class="two-col">
+
+    <!-- FROM -->
+    <div class="card">
+      <div class="card-header">
+        <h3>FROM</h3>
+        <button class="btn btn-ghost btn-sm" onclick="openEditor('from')">✏️ 管理</button>
+      </div>
+      <div class="card-body">
+        <div class="profile-row">
+          <select id="from-select" onchange="fillFrom()"></select>
+        </div>
+        <div class="fields-grid">
+          <div class="field full"><label class="lbl">OBC Full Name</label>
+            <input type="text" id="from_full_name"/></div>
+          <div class="field full"><label class="lbl">House No. &amp; Street</label>
+            <input type="text" id="from_street"/></div>
+          <div class="field"><label class="lbl">Post Code</label>
+            <input type="text" id="from_post_code"/></div>
+          <div class="field"><label class="lbl">City</label>
+            <input type="text" id="from_city"/></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATE + OBC TRIP -->
+    <div class="card">
+      <div class="card-header"><h3>DATE &amp; OBC TRIP</h3></div>
+      <div class="card-body">
+        <div class="fields-grid">
+          <div class="field full"><label class="lbl">Date</label>
+            <input type="date" id="inv_date"/></div>
+          <div class="field full"><label class="lbl">OBC Trip</label>
+            <input type="text" id="obc_trip" placeholder="free typing…"/></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /two-col -->
+
+  <!-- BILL TO -->
+  <div class="card">
+    <div class="card-header">
+      <h3>BILL TO</h3>
+      <button class="btn btn-ghost btn-sm" onclick="openEditor('billto')">✏️ 管理</button>
+    </div>
+    <div class="card-body">
+      <div class="profile-row">
+        <select id="billto-select" onchange="fillBillto()"></select>
+      </div>
+      <div class="fields-grid">
+        <div class="field"><label class="lbl">Company Name</label>
+          <input type="text" id="billto_company"/></div>
+        <div class="field"><label class="lbl">Address</label>
+          <input type="text" id="billto_address"/></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="card">
+    <div class="card-header">
+      <h3>PAYMENT INFO</h3>
+      <button class="btn btn-ghost btn-sm" onclick="openEditor('payment')">✏️ 管理</button>
+    </div>
+    <div class="card-body">
+      <div class="profile-row">
+        <select id="payment-select" onchange="fillPayment()"></select>
+      </div>
+      <div class="fields-grid">
+        <div class="field"><label class="lbl">Payment</label>
+          <input type="text" id="pay_payment"/></div>
+        <div class="field"><label class="lbl">Bank Name &amp; Address</label>
+          <input type="text" id="pay_bank_name"/></div>
+        <div class="field"><label class="lbl">Beneficiary Name</label>
+          <input type="text" id="pay_beneficiary"/></div>
+        <div class="field"><label class="lbl">SWIFT Code</label>
+          <input type="text" id="pay_swift"/></div>
+        <div class="field full"><label class="lbl">Account Number / IBAN</label>
+          <input type="text" id="pay_iban"/></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITEMS -->
+  <div class="card">
+    <div class="card-header"><h3>INVOICE ITEMS</h3></div>
+    <div class="card-body" style="padding:0">
+      <div class="items-header">
+        <div>#</div><div>DESCRIPTION</div>
+        <div style="text-align:right">COST (USD)</div>
+        <div style="text-align:center">QTY</div>
+        <div style="text-align:right">AMOUNT</div>
+        <div></div>
+      </div>
+      <div id="items-container"></div>
+      <div class="items-footer">
+        <button class="btn btn-ghost btn-sm" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--line)"
+                onclick="addItemRow()">+ 新增一列</button>
+        <div style="text-align:right">
+          <div class="total-label">TOTAL USD</div>
+          <div class="total-value" id="grand-total">0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="card">
+    <div class="card-header"><h3>NOTES <span style="opacity:.5;font-size:.8rem;font-family:'DM Sans',sans-serif">(選填)</span></h3></div>
+    <div class="card-body">
+      <textarea id="notes" rows="3" placeholder="備註事項…"></textarea>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="card">
+    <div class="card-header"><h3>PHOTOS 附件照片</h3></div>
+    <div class="card-body">
+      <div class="photo-drop" id="photo-drop"
+           onclick="document.getElementById('photo-input').click()"
+           ondragover="e=>{e.preventDefault();this.classList.add('drag')}"
+           ondragleave="e=>{this.classList.remove('drag')}"
+           ondrop="handleDrop(event)">
+        <div class="icon">🖼</div>
+        <p>點擊或拖放照片到此處<br><small style="color:#bbb">支援 JPG、PNG、BMP、GIF、TIFF</small></p>
+      </div>
+      <input type="file" id="photo-input" multiple accept="image/*"
+             style="display:none" onchange="handlePhotoInput(this.files)"/>
+      <div class="photo-list" id="photo-list"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Action bar -->
+<div class="action-bar">
+  <span class="file-label" id="current-file">未儲存</span>
+  <button class="btn btn-ghost" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--line)"
+          onclick="loadOBC()">📂 開啟 .obc</button>
+  <button class="btn btn-ghost" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--line)"
+          onclick="saveOBC()">💾 儲存 .obc</button>
+  <button class="btn btn-success" style="font-size:.95rem;padding:10px 28px"
+          onclick="generatePDF()">🖨 產生 PDF</button>
+</div>
+
+<!-- Profile Editor Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">管理資料</h3>
+      <button class="modal-close" onclick="closeEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-list" id="modal-list-wrap">
+        <div id="modal-list-items"></div>
+        <div class="modal-list-actions">
+          <button class="btn btn-sm" style="background:var(--accent);color:#fff"
+                  onclick="addProfile()">+ 新增</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteProfile()">🗑 刪除</button>
+        </div>
+      </div>
+      <div class="modal-fields" id="modal-fields"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--line)"
+              onclick="closeEditor()">取消</button>
+      <button class="btn btn-primary" onclick="saveEditor()">💾 儲存並關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>產生 PDF 中，請稍候…</p>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let profiles = { from_profiles:[], billto_profiles:[], payment_profiles:[] };
+let uploadedPhotos = []; // [{path, name, desc, thumbUrl}]
+let editorKind = null;
+let editorProfiles = [];
+let editorIdx = 0;
+
+const EDITOR_FIELDS = {
+  from:    [["名稱(顯示用)","name"],["OBC Full Name","full_name"],
+            ["House No. & Street","street"],["Post Code","post_code"],["City","city"]],
+  billto:  [["名稱(顯示用)","name"],["Company Name","company"],["Address","address"]],
+  payment: [["名稱(顯示用)","name"],["Payment","payment"],
+            ["Bank Name & Address","bank_name"],["Beneficiary Name","beneficiary"],
+            ["SWIFT Code","swift"],["Account Number / IBAN","iban"]]
+};
+const PROFILE_KEY = { from:"from_profiles", billto:"billto_profiles", payment:"payment_profiles" };
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  // Set today's date
+  document.getElementById("inv_date").value = new Date().toISOString().slice(0,10);
+  await loadProfiles();
+  for (let i = 0; i < 7; i++) addItemRow();
+};
+
+async function loadProfiles() {
+  const res = await fetch("/api/profiles");
+  profiles = await res.json();
+  refreshDropdowns();
+}
+
+function refreshDropdowns() {
+  fillDropdown("from-select", profiles.from_profiles);
+  fillDropdown("billto-select", profiles.billto_profiles);
+  fillDropdown("payment-select", profiles.payment_profiles);
+  fillFrom(); fillBillto(); fillPayment();
+}
+
+function fillDropdown(id, list) {
+  const sel = document.getElementById(id);
+  const prev = sel.value;
+  sel.innerHTML = list.map((p,i) =>
+    `<option value="${i}">${escHtml(p.name||"(無名)")}</option>`).join("");
+  if (prev !== "" && prev < list.length) sel.value = prev;
+}
+
+function fillFrom() {
+  const p = profiles.from_profiles[+document.getElementById("from-select").value] || {};
+  setVal("from_full_name", p.full_name); setVal("from_street", p.street);
+  setVal("from_post_code", p.post_code); setVal("from_city", p.city);
+}
+function fillBillto() {
+  const p = profiles.billto_profiles[+document.getElementById("billto-select").value] || {};
+  setVal("billto_company", p.company); setVal("billto_address", p.address);
+}
+function fillPayment() {
+  const p = profiles.payment_profiles[+document.getElementById("payment-select").value] || {};
+  setVal("pay_payment", p.payment); setVal("pay_bank_name", p.bank_name);
+  setVal("pay_beneficiary", p.beneficiary); setVal("pay_swift", p.swift);
+  setVal("pay_iban", p.iban);
+}
+
+// ── Items ─────────────────────────────────────────────────────────────────────
+let itemCounter = 0;
+
+function addItemRow() {
+  itemCounter++;
+  const idx = itemCounter;
+  const container = document.getElementById("items-container");
+  const div = document.createElement("div");
+  div.className = "item-row";
+  div.dataset.idx = idx;
+  div.innerHTML = `
+    <div class="item-num">${container.children.length + 1}</div>
+    <input type="text" class="desc" placeholder="描述…" oninput="updateNumbers()"/>
+    <input type="text" class="cost right" placeholder="0.00" oninput="calcRow(this)"/>
+    <input type="text" class="qty center" placeholder="1" oninput="calcRow(this)"/>
+    <div class="amt-display" data-amt="0">—</div>
+    <button class="remove-photo" onclick="removeItemRow(this)" title="刪除">✕</button>`;
+  container.appendChild(div);
+  updateGrandTotal();
+}
+
+function removeItemRow(btn) {
+  btn.closest(".item-row").remove();
+  updateNumbers();
+}
+
+function updateNumbers() {
+  document.querySelectorAll("#items-container .item-row").forEach((row, i) => {
+    row.querySelector(".item-num").textContent = i + 1;
+  });
+  updateGrandTotal();
+}
+
+function calcRow(input) {
+  const row = input.closest(".item-row");
+  const cost = parseFloat(row.querySelector(".cost").value) || 0;
+  const qty  = parseFloat(row.querySelector(".qty").value)  || 0;
+  const amt  = cost * qty;
+  const amtEl = row.querySelector(".amt-display");
+  amtEl.dataset.amt = amt;
+  amtEl.textContent = (cost || qty) ? amt.toFixed(2) : "—";
+  updateGrandTotal();
+}
+
+function updateGrandTotal() {
+  let total = 0;
+  document.querySelectorAll(".amt-display").forEach(el => {
+    total += parseFloat(el.dataset.amt) || 0;
+  });
+  document.getElementById("grand-total").textContent = total.toLocaleString("en-US",
+    {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+// ── Photos ────────────────────────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("photo-drop").classList.remove("drag");
+  handlePhotoInput(e.dataTransfer.files);
+}
+
+async function handlePhotoInput(files) {
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+    const fd = new FormData();
+    fd.append("photo", file);
+    const res = await fetch("/api/upload_photo", {method:"POST", body:fd});
+    const data = await res.json();
+    if (data.error) { showToast(data.error, "error"); continue; }
+    const thumbUrl = URL.createObjectURL(file);
+    addPhotoRow({path:data.path, name:data.name, desc:"", thumbUrl});
+  }
+}
+
+function addPhotoRow({path, name, desc, thumbUrl}) {
+  const id = "ph_" + Date.now() + Math.random();
+  const item = {id, path, name, desc, thumbUrl};
+  uploadedPhotos.push(item);
+  const list = document.getElementById("photo-list");
+  const div = document.createElement("div");
+  div.className = "photo-item"; div.dataset.id = id;
+  div.innerHTML = `
+    <img class="photo-thumb" src="${escHtml(thumbUrl)}" alt="${escHtml(name)}"/>
+    <div class="photo-info">
+      <div class="photo-name">${escHtml(name)}</div>
+      <input type="text" placeholder="照片描述…" value="${escHtml(desc)}"
+             oninput="updatePhotoDesc('${id}', this.value)"/>
+    </div>
+    <button class="remove-photo" onclick="removePhoto('${id}')" title="移除">✕</button>`;
+  list.appendChild(div);
+}
+
+function updatePhotoDesc(id, val) {
+  const p = uploadedPhotos.find(p => p.id === id);
+  if (p) p.desc = val;
+}
+
+function removePhoto(id) {
+  uploadedPhotos = uploadedPhotos.filter(p => p.id !== id);
+  document.querySelector(`[data-id="${id}"]`)?.remove();
+}
+
+// ── Collect form data ─────────────────────────────────────────────────────────
+function collectFormData() {
+  const items = [];
+  document.querySelectorAll("#items-container .item-row").forEach(row => {
+    const desc = row.querySelector(".desc").value.trim();
+    const cost = row.querySelector(".cost").value.trim();
+    const qty  = row.querySelector(".qty").value.trim();
+    if (desc || cost || qty) items.push({description:desc, cost, qty});
+  });
+  return {
+    date:     document.getElementById("inv_date").value,
+    obc_trip: document.getElementById("obc_trip").value,
+    from: {
+      full_name: getVal("from_full_name"), street: getVal("from_street"),
+      post_code: getVal("from_post_code"), city:   getVal("from_city"),
+    },
+    billto: {
+      company: getVal("billto_company"), address: getVal("billto_address"),
+    },
+    payment: {
+      payment:    getVal("pay_payment"),    bank_name:   getVal("pay_bank_name"),
+      beneficiary:getVal("pay_beneficiary"),swift:       getVal("pay_swift"),
+      iban:       getVal("pay_iban"),
+    },
+    items,
+    notes: document.getElementById("notes").value,
+    photos: uploadedPhotos.map(p => ({path:p.path, description:p.desc})),
+  };
+}
+
+function restoreFormData(data) {
+  setVal("inv_date",    data.date || new Date().toISOString().slice(0,10));
+  setVal("obc_trip",    data.obc_trip || "");
+  const f = data.from || {};
+  setVal("from_full_name", f.full_name); setVal("from_street", f.street);
+  setVal("from_post_code", f.post_code); setVal("from_city",   f.city);
+  const bt = data.billto || {};
+  setVal("billto_company", bt.company); setVal("billto_address", bt.address);
+  const py = data.payment || {};
+  setVal("pay_payment", py.payment); setVal("pay_bank_name", py.bank_name);
+  setVal("pay_beneficiary", py.beneficiary); setVal("pay_swift", py.swift);
+  setVal("pay_iban", py.iban);
+  setVal("notes", data.notes || "");
+
+  // Items
+  document.getElementById("items-container").innerHTML = "";
+  itemCounter = 0;
+  const items = data.items || [];
+  const rowCount = Math.max(items.length, 7);
+  for (let i = 0; i < rowCount; i++) addItemRow();
+  const rows = document.querySelectorAll("#items-container .item-row");
+  items.forEach((item, i) => {
+    if (!rows[i]) return;
+    rows[i].querySelector(".desc").value = item.description || "";
+    rows[i].querySelector(".cost").value = item.cost || "";
+    rows[i].querySelector(".qty").value  = item.qty  || "";
+    calcRow(rows[i].querySelector(".cost"));
+  });
+
+  // Photos: note — server-side paths won't have thumbUrls; show path as name
+  uploadedPhotos = [];
+  document.getElementById("photo-list").innerHTML = "";
+  (data.photos || []).forEach(ph => {
+    addPhotoRow({path:ph.path, name:ph.path.split(/[/\\]/).pop(),
+                 desc:ph.description||"", thumbUrl:"/static/photo_placeholder.svg"});
+  });
+}
+
+// ── Save / Load .obc ──────────────────────────────────────────────────────────
+function saveOBC() {
+  const data = collectFormData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "invoice.obc";
+  a.click();
+  document.getElementById("current-file").textContent = "invoice.obc";
+  showToast("已下載 invoice.obc", "success");
+}
+
+function loadOBC() {
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = ".obc,.json";
+  input.onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      restoreFormData(data);
+      document.getElementById("current-file").textContent = file.name;
+      showToast(`已載入 ${file.name}`, "success");
+    } catch {
+      showToast("檔案格式錯誤", "error");
+    }
+  };
+  input.click();
+}
+
+// ── Generate PDF ──────────────────────────────────────────────────────────────
+async function generatePDF() {
+  const loading = document.getElementById("loading");
+  loading.classList.add("show");
+  try {
+    const data = collectFormData();
+    const res  = await fetch("/api/generate_pdf", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.error) { showToast("錯誤：" + result.error, "error"); return; }
+    // Auto-download
+    const a = document.createElement("a");
+    a.href = result.url; a.download = "invoice.pdf"; a.click();
+    showToast("PDF 已產生，開始下載！", "success");
+  } catch(e) {
+    showToast("連線錯誤：" + e.message, "error");
+  } finally {
+    loading.classList.remove("show");
+  }
+}
+
+// ── Profile Editor ────────────────────────────────────────────────────────────
+function openEditor(kind) {
+  editorKind = kind;
+  editorProfiles = JSON.parse(JSON.stringify(profiles[PROFILE_KEY[kind]]));
+  editorIdx = 0;
+  const titles = {from:"管理 FROM 資料", billto:"管理 BILL TO 資料", payment:"管理 PAYMENT 資料"};
+  document.getElementById("modal-title").textContent = titles[kind];
+  renderModalList();
+  renderModalFields();
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeEditor() { document.getElementById("modal").classList.remove("open"); }
+
+function renderModalList() {
+  const el = document.getElementById("modal-list-items");
+  el.innerHTML = editorProfiles.map((p,i) =>
+    `<div class="modal-list-item${i===editorIdx?" active":""}" onclick="selectModalItem(${i})">
+      ${escHtml(p.name||"(無名)")}
+    </div>`
+  ).join("");
+}
+
+function renderModalFields() {
+  const fields = EDITOR_FIELDS[editorKind];
+  const p = editorProfiles[editorIdx] || {};
+  document.getElementById("modal-fields").innerHTML = fields.map(([label,key]) => `
+    <div class="field">
+      <label>${escHtml(label)}</label>
+      <input type="text" id="ef_${key}" value="${escHtml(p[key]||"")}"
+             oninput="syncEditorField('${key}', this.value)"/>
+    </div>`).join("");
+}
+
+function selectModalItem(i) {
+  syncCurrentEditor();
+  editorIdx = i;
+  renderModalList();
+  renderModalFields();
+}
+
+function syncCurrentEditor() {
+  const fields = EDITOR_FIELDS[editorKind];
+  fields.forEach(([,key]) => {
+    const el = document.getElementById("ef_" + key);
+    if (el) editorProfiles[editorIdx][key] = el.value;
+  });
+}
+
+function syncEditorField(key, val) {
+  if (editorProfiles[editorIdx]) editorProfiles[editorIdx][key] = val;
+}
+
+function addProfile() {
+  syncCurrentEditor();
+  const blank = {};
+  EDITOR_FIELDS[editorKind].forEach(([,k]) => blank[k] = "");
+  blank.name = `新資料 ${editorProfiles.length + 1}`;
+  editorProfiles.push(blank);
+  editorIdx = editorProfiles.length - 1;
+  renderModalList();
+  renderModalFields();
+}
+
+function deleteProfile() {
+  if (editorProfiles.length <= 1) { showToast("至少保留一筆資料", "error"); return; }
+  editorProfiles.splice(editorIdx, 1);
+  editorIdx = Math.max(0, editorIdx - 1);
+  renderModalList();
+  renderModalFields();
+}
+
+async function saveEditor() {
+  syncCurrentEditor();
+  profiles[PROFILE_KEY[editorKind]] = editorProfiles;
+  await fetch("/api/profiles", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(profiles)
+  });
+  refreshDropdowns();
+  closeEditor();
+  showToast("已儲存", "success");
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getVal(id) { return document.getElementById(id)?.value || ""; }
+function setVal(id, v) { const el = document.getElementById(id); if(el) el.value = v || ""; }
+function escHtml(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function showToast(msg, type="") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast" + (type ? " " + type : "");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3200);
+}
+</script>
+</body>
+</html>

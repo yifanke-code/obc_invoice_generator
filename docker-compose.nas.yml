@@ -1,0 +1,55 @@
+version: '3.8'
+
+# 这是 ASUSTOR NAS 上使用的配置示例
+# 注意：请根据您实际的 NAS 目录结构修改路径
+
+services:
+  obc-invoice:
+    # 使用本地 Dockerfile 构建镜像
+    build: .
+    
+    # 容器名称（便于识别和管理）
+    container_name: obc-invoice-generator
+    
+    # 端口映射：<主机端口>:<容器端口>
+    ports:
+      - "5050:5050"
+    
+    # Volume 挂载（关键部分）
+    volumes:
+      # 方式 1：使用相对路径（如果 docker-compose.yml 在项目根目录）
+      # - ./:/app
+      # - ./invoice_data.json:/app/invoice_data.json:rw
+      # - ./uploads:/app/uploads:rw
+      # - ./output:/app/output:rw
+      
+      # 方式 2：使用绝对路径（推荐在 NAS 上使用）
+      # 请根据您的实际 NAS 路径修改下面的 /share/homes/admin/obc_invoice_generator
+      
+      # 挂载整个项目目录
+      - /share/homes/admin/obc_invoice_generator:/app
+      
+      # 明确挂载 invoice_data.json（确保实时同步）
+      - /share/homes/admin/obc_invoice_generator/invoice_data.json:/app/invoice_data.json:rw
+      
+      # 挂载上传目录
+      - /share/homes/admin/obc_invoice_generator/uploads:/app/uploads:rw
+      
+      # 挂载输出目录
+      - /share/homes/admin/obc_invoice_generator/output:/app/output:rw
+    
+    # 环境变量
+    environment:
+      # 禁用 Python 输出缓冲，使日志实时显示
+      - PYTHONUNBUFFERED=1
+    
+    # 自动重启策略
+    # unless-stopped: 容器停止后自动重启，除非被显式停止
+    restart: unless-stopped
+    
+    # 日志配置（可选）
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
